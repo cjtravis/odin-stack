@@ -1,0 +1,152 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import psycopg2
+from datetime import datetime
+import random
+
+app = FastAPI()
+
+# PostgreSQL database configuration
+db_config = {
+    "host": "192.168.0.203",
+    "database": "posdb",
+    "user": "postgres",
+    "password": "password",
+    "port": 55432,
+}
+
+# Data models
+class OrderCreate(BaseModel):
+    product_id: int
+    quantity: int
+
+class Order(BaseModel):
+    order_id: int
+    product_id: int
+    price: float
+    quantity: int
+    total_amount: float
+    created_at: datetime
+    upc: str
+
+# Create a database connection pool
+conn = psycopg2.connect(**db_config)
+conn.autocommit = True
+
+# Service logic for CRUD operations
+@app.post("/orders/", response_model=Order)
+async def create_order(order: OrderCreate):
+    cursor = conn.cursor()
+    try:
+        # Get product details including price and UPC
+        cursor.execute("SELECT product_name, price, upc FROM product WHERE product_id = %s;", (order.product_id,))
+        product_data = cursor.fetchone()
+
+        if product_data:
+            product_name, price, upc = product_data
+            total_amount = price * order.quantity
+            timestamp = datetime.now()
+
+            # Insert the order into the database
+            cursor.execute(
+                """
+                INSERT INTO public.orders (product_id, price, quantity, total_amount, created_at, upc)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING order_id;
+                """,
+                (order.product_id, price, order.quantity, total_amount, timestamp, upc),
+            )
+            order_id = cursor.fetchone()[0]
+
+            return {
+                "order_id": order_id,
+                "product_id": order.product_id,
+                "price": price,
+                "quantity": order.quantity,
+                "total_amount": total_amount,
+                "created_at": timestamp,
+                "upc": upc,
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+    except psycopg2.Error as e:
+        raise HTTPException(status_code=500, detail="Database error")
+
+@app.get("/orders/{order_id}", response_model=Order)
+async def read_order(order_id: int):
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT
+                o.order_id,
+                o.product_id,
+                p.price,
+                o.quantity,
+                o.total_amount,
+                o.created_at,
+                p.upc
+            FROM public.orders o
+            JOIN product p ON o.product_id = p.product_id
+            WHERE o.order_id = %s;
+            """,
+            (order_id,),
+        )
+        order_data = cursor.fetchone()
+
+        if order_data:
+            (
+                order_id,
+                product_id,
+                price,
+                quantity,
+                total_amount,
+                created_at,
+                upc,
+            ) = order_data
+            return {
+                "order_id": order_id,
+                "product_id": product_id,
+                "price": price,
+                "quantity": quantity,
+                "total_amount": total_amount,
+                "created_at": created_at,
+                "upc": upc,
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+    except psycopg2.Error as e:
+        raise HTTPException(status_code=500, detail="Database error")
+
+@app.put("/orders/{order_id}", response_model=Order)
+async def update_order(order_id: int, order: OrderCreate):
+    cursor = conn.cursor()
+    try:
+        # Check if the order exists
+        cursor.execute("SELECT product_id FROM public.orders WHERE order_id = %s;", (order_id,))
+        existing_product_id = cursor.fetchone()
+
+        if existing_product_id:
+            existing_product_id = existing_product_id[0]
+
+            # Get product details including price
+            cursor.execute("SELECT price FROM product WHERE product_id = %s;", (existing_product_id,))
+            price = cursor.fetchone()[0]
+
+            total_amount = price * order.quantity
+            timestamp = datetime.now()
+
+            # Update the order in the database
+            cursor.execute(
+                """
+                UPDATE public.orders
+                SET product_id = %s, price = %s, quantity = %s, total_amount = %s, created_at = %s
+                WHERE order_id = %s
+                RETURNING product_id;
+                """,
+                (order.product_id, price, order.quantity, total_amount, timestamp, order_id),
+            )
+
+            if cursor.fetchone()[0] == order.product

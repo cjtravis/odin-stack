@@ -8,22 +8,46 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: posdb
     ports:
-      - "5432:5432"
+      - "55432:5432"
     networks:
-      - pos_network
+      - retail_network
     volumes:
-      - ./pos/postgres-data:/var/lib/postgresql/data  # Mount a local directory to store PostgreSQL data
+      - ./data/postgres-data:/var/lib/postgresql/data  # Mount a local directory to store PostgreSQL data
+      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-
-  data_generator:
+  service_base:
     build:
-      context: ./pos
+      context: ./services/base
+      dockerfile: Dockerfile
+    image: retail-base-image:latest
+
+  orders_service:    
+    build:
+      context: ./services/orders
+      dockerfile: Dockerfile
     depends_on:
       - postgres
+      - inventory_service
+      - service_base
     networks:
-      - pos_network
+      - retail_network
+    restart: always
+    ports:
+      - "8000:8000"
+
+  inventory_service:
+    build:
+      context: ./services/inventory
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - service_base
+    networks:
+      - retail_network
+    restart: always
+    ports:
+      - "8001:8001"
 
 networks:
-  pos_network:
+  retail_network:
     driver: bridge
-    name: pos_network

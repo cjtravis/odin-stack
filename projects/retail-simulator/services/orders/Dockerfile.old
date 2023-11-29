@@ -1,0 +1,18 @@
+FROM python:3.9
+
+WORKDIR /app
+
+COPY requirements.txt /app/
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+COPY data_generator.py /app/
+
+# Create an entry point script that waits for PostgreSQL
+#COPY wait-for-postgres.sh /usr/local/bin/wait-for-postgres.sh
+#RUN chmod +x /usr/local/bin/wait-for-postgres.sh
+
+# Set the entry point to wait for PostgreSQL and then run your app
+#ENTRYPOINT ["wait-for-postgres.sh"]
+
+CMD ["python", "data_generator.py"]

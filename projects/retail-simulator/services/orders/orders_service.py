@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import psycopg2
 from datetime import datetime
 import random
+import requests
 
 app = FastAPI()
 
@@ -53,7 +54,7 @@ async def create_order(order: OrderCreate):
             status = "Open"
 
             # Check inventory availability using the inventory service
-            inventory_check_url = "http://inventory-service:8001/inventory/{product_id}".format(product_id=order.product_id)
+            inventory_check_url = "{isurl}/inventory/{product_id}".format(isurl=inventory_service_url,product_id=order.product_id)
             inventory_response = requests.get(inventory_check_url)
 
             if inventory_response.status_code == 200:
@@ -72,7 +73,8 @@ async def create_order(order: OrderCreate):
                     order_id = cursor.fetchone()[0]
 
                     # Decrement the inventory using the inventory service
-                    decrement_inventory_url = "http://inventory-service:8001/inventory/{product_id}/decrement".format(
+                    decrement_inventory_url = "{isurl}/inventory/{product_id}/decrement".format(
+                        isurl=inventory_service_url,
                         product_id=order.product_id
                     )
                     decrement_response = requests.post(decrement_inventory_url, json={"quantity": order.quantity})

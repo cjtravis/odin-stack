@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: posdb
+    ports:
+      - "5432:5432"
+    networks:
+      - pos_network
+    volumes:
+      - ./pos/postgres-data:/var/lib/postgresql/data  # Mount a local directory to store PostgreSQL data
+
+
+  data_generator:
+    build:
+      context: ./pos
+    depends_on:
+      - postgres
+    networks:
+      - pos_network
+
+networks:
+  pos_network:
+    driver: bridge
+    name: pos_network

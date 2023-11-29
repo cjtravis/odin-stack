@@ -1,0 +1,11 @@
+.vscode/
+.idea/
+.DS_Store
+*.log
+.env
+data/
+pgdata/
+dags/
+logs/
+plugins/
+postgres/

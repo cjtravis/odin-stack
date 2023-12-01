@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+#  postgres:
+#    image: postgres:latest
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: password
+#      POSTGRES_DB: posdb
+#    ports:
+#      - "55432:5432"
+#    networks:
+#      - retail_network
+#    volumes:
+#      - ./data/postgres-data:/var/lib/postgresql/data  # Mount a local directory to store PostgreSQL data
+#      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  generate_customer_base:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: generate_customer_data:latest
+   
+
+  generate_customer_data:    
+    image: generate_customer_data:latest
+    environment:
+#      ENV OUTPUT_CSV: TRUE
+#      ENV OUTPUT_SQL: TRUE
+      NUM_RECORDS: 10000
+      DB_HOST: 192.168.0.203
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_PORT: 55432
+      DB_NAME: posdb
+    volumes:
+      - ./data:/app/data
+    networks:
+      - retail_network
+
+networks:
+  retail_network:
+    driver: bridge

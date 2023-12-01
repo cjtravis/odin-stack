@@ -23,7 +23,7 @@ services:
 
   orders_service:    
     build:
-      context: ./services/orders
+      context: ./services/orders/docker
       dockerfile: Dockerfile
     depends_on:
       - postgres
@@ -37,7 +37,7 @@ services:
 
   inventory_service:
     build:
-      context: ./services/inventory
+      context: ./services/inventory/docker
       dockerfile: Dockerfile
     depends_on:
       - postgres

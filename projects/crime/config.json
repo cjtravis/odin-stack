@@ -1,0 +1,8 @@
+{
+    "urls": {
+        "2020": "https://data.kcmo.org/resource/x39y-7d3m_2020.csv",
+        "2021": "https://data.kcmo.org/resource/x39y-7d3m_2021.csv",
+        "20222": "https://data.kcmo.org/resource/x39y-7d3m_2022.csv",
+        "2022": "https://data.kcmo.org/resource/x39y-7d3m.json"
+    }
+}

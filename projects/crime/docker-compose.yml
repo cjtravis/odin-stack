@@ -1,0 +1,10 @@
+versin: '3'
+
+services:
+  fetch_data: 
+    build: 
+      context: ./docker/
+      dockerfile: Dockerfile
+    image: fetch_crime_data:latest
+
+    
